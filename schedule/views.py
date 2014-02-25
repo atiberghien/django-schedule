@@ -1,3 +1,23 @@
+<<<<<<< HEAD
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core import serializers
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect, Http404, HttpResponse
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import Context, loader, RequestContext
+#from django.views.generic.create_update import delete_object, delete_object
+from schedule.conf.settings import GET_EVENTS_FUNC, OCCURRENCE_CANCEL_REDIRECT
+from schedule.forms import EventBackendForm, OccurrenceBackendForm, EventForm, \
+    OccurrenceForm
+from schedule.models import *
+from schedule.periods import weekday_names, Period
+from schedule.utils import check_event_permissions, coerce_date_dict, \
+    decode_occurrence, serialize_occurrences
+from urllib import quote
+import datetime
+
+=======
 from urllib import quote
 from django.shortcuts import render_to_response, get_object_or_404
 from django.views.generic.create_update import delete_object
@@ -14,6 +34,7 @@ from schedule.forms import EventForm, OccurrenceForm
 from schedule.models import *
 from schedule.periods import weekday_names
 from schedule.utils import check_event_permissions, coerce_date_dict
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 
 def calendar(request, calendar_slug, template='schedule/calendar.html', extra_context=None):
     """
@@ -69,6 +90,9 @@ def calendar_by_periods(request, calendar_slug, periods=None,
     """
     extra_context = extra_context or {}
     calendar = get_object_or_404(Calendar, slug=calendar_slug)
+<<<<<<< HEAD
+    date, end = coerce_date_dict(request.GET)
+=======
     date = coerce_date_dict(request.GET)
     if date:
         try:
@@ -77,6 +101,7 @@ def calendar_by_periods(request, calendar_slug, periods=None,
             raise Http404
     else:
         date = datetime.datetime.now()
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
     event_list = GET_EVENTS_FUNC(request, calendar)
     period_objects = dict([(period.__name__.lower(), period(event_list, date)) for period in periods])
     context = {
@@ -137,7 +162,11 @@ def occurrence(request, event_id,
     extra_context = kwargs.get('extra_context', None) or {}
     event, occurrence = get_occurrence(event_id, *args, **kwargs)
     back_url = request.META.get('HTTP_REFERER', None)
+<<<<<<< HEAD
+    context = {
+=======
     context =  {
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
         'event': event,
         'occurrence': occurrence,
         'back_url': back_url,
@@ -179,7 +208,11 @@ def cancel_occurrence(request, event_id,
     """
     extra_context = kwargs.get('extra_context', None) or {}
     event, occurrence = get_occurrence(event_id, *args, **kwargs)
+<<<<<<< HEAD
+    next = kwargs.get('next', None) or get_next_url(request, event.get_absolute_url())
+=======
     next = kwargs.get('next',None) or get_next_url(request, event.get_absolute_url())
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
     if request.method != "POST":
         context = {
             "occurrence": occurrence,
@@ -203,7 +236,11 @@ def get_occurrence(event_id, occurrence_id=None, year=None, month=None,
     if(occurrence_id):
         occurrence = get_object_or_404(Occurrence, id=occurrence_id)
         event = occurrence.event
+<<<<<<< HEAD
+    elif not [x for x in (year, month, day, hour, minute, second) if x is None]:
+=======
     elif(all((year, month, day, hour, minute, second))):
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
         event = get_object_or_404(Event, id=event_id)
         occurrence = event.get_occurrence(
             datetime.datetime(int(year), int(month), int(day), int(hour),
@@ -216,8 +253,19 @@ def get_occurrence(event_id, occurrence_id=None, year=None, month=None,
 
 
 @check_event_permissions
+<<<<<<< HEAD
+def create_or_edit_event(request,
+                         calendar_slug=None,
+                         event_id=None,
+                         next=None,
+                         template_name='schedule/create_event.html',
+                         form_class=EventForm,
+                         coerce_date_func=coerce_date_dict,
+                         extra_context=None):
+=======
 def create_or_edit_event(request, calendar_slug, event_id=None, next=None,
     template_name='schedule/create_event.html', form_class = EventForm, extra_context=None):
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
     """
     This function, if it receives a GET request or if given an invalid form in a
     POST request it will generate the following response
@@ -250,6 +298,24 @@ def create_or_edit_event(request, calendar_slug, event_id=None, next=None,
     # Lastly redirect to the event detail of the recently create event
     """
     extra_context = extra_context or {}
+<<<<<<< HEAD
+    instance = None
+    initial_data = None
+    if event_id is not None:
+        instance = get_object_or_404(Event, id=event_id)
+    else:
+        start, end = coerce_date_func(request.GET)
+        initial_data = {"start": start}
+        if end :
+            initial_data["end"] = end
+        else :
+            initial_data["end"] = start + datetime.timedelta(minutes=30)
+    
+    if calendar_slug:
+        calendar = get_object_or_404(Calendar, slug=calendar_slug)
+
+    form = form_class(data=request.POST or None, instance=instance, hour24=True, initial=initial_data)
+=======
     date = coerce_date_dict(request.GET)
     initial_data = None
     if date:
@@ -272,12 +338,19 @@ def create_or_edit_event(request, calendar_slug, event_id=None, next=None,
 
     form = form_class(data=request.POST or None, instance=instance,
         hour24=True, initial=initial_data)
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 
     if form.is_valid():
         event = form.save(commit=False)
         if instance is None:
             event.creator = request.user
+<<<<<<< HEAD
+            if calendar_slug:
+                event.calendar = calendar
+            #else the calendar was specified in the form
+=======
             event.calendar = calendar
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
         event.save()
         next = next or reverse('event', args=[event.id])
         next = get_next_url(request, next)
@@ -286,9 +359,16 @@ def create_or_edit_event(request, calendar_slug, event_id=None, next=None,
     next = get_next_url(request, next)
     context = {
         "form": form,
+<<<<<<< HEAD
+        "next":next
+    }
+    if calendar_slug:
+        context["calendar"] = calendar
+=======
         "calendar": calendar,
         "next":next
     }
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
     context.update(extra_context)
     return render_to_response(template_name, context, context_instance=RequestContext(request))
 
@@ -309,12 +389,21 @@ def delete_event(request, event_id, next=None, login_required=True, extra_contex
     next = get_next_url(request, next)
     extra_context['next'] = next
     return delete_object(request,
+<<<<<<< HEAD
+                         model=Event,
+                         object_id=event_id,
+                         post_delete_redirect=next,
+                         template_name="schedule/delete_event.html",
+                         extra_context=extra_context,
+                         login_required=login_required
+=======
                          model = Event,
                          object_id = event_id,
                          post_delete_redirect = next,
                          template_name = "schedule/delete_event.html",
                          extra_context = extra_context,
                          login_required = login_required
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
                         )
 
 def check_next_url(next):
@@ -333,3 +422,117 @@ def get_next_url(request, default):
     if 'next' in request.REQUEST and check_next_url(request.REQUEST['next']) is not None:
         next = request.REQUEST['next']
     return next
+<<<<<<< HEAD
+
+
+class JSONError(HttpResponse):
+
+    def __init__(self, error):
+        s = "{error:'%s'}" % error
+        HttpResponse.__init__(self, s)
+        # TODO strip html tags from form errors
+
+def calendar_by_periods_json(request,
+                             calendar_slug,
+                             periods,
+                             nb_periods=1,
+                             get_events_func=GET_EVENTS_FUNC,
+                             coerce_date_func=coerce_date_dict,
+                             serialize_occurrences_func=serialize_occurrences):
+    # XXX is this function name good?
+    # it conforms with the standard API structure but in this case it is rather cryptic
+    user = request.user
+    calendar = get_object_or_404(Calendar, slug=calendar_slug)
+    start, end = coerce_date_func(request.GET)
+
+    event_list = get_events_func(request, calendar)
+    if not end :
+        period_object = periods[0](event_list, start)
+    else:
+        period_object = Period(event_list, start, end)
+
+    occurrences = []
+    for idx in range(nb_periods):
+        for o in period_object.occurrences:
+            if period_object.classify_occurrence(o):
+                occurrences.append(o)
+        if hasattr(period_object, "next"):
+            period_object = period_object.next()
+
+    resp = serialize_occurrences_func(request, occurrences, user)
+    return HttpResponse(resp)
+
+
+# TODO permissions check
+def ajax_edit_occurrence_by_code(request):
+    try:
+        id = request.REQUEST.get('id')
+        kwargs = decode_occurrence(id)
+        event_id = kwargs.pop('event_id')
+        event, occurrence = get_occurrence(event_id, **kwargs)
+        if request.REQUEST.get('action') == 'cancel':
+            occurrence.cancel()
+            return HttpResponse(serialize_occurrences(request, [occurrence], request.user))
+        form = OccurrenceBackendForm(data=request.POST or None, instance=occurrence)
+        if form.is_valid():
+            occurrence = form.save(commit=False)
+            occurrence.event = event
+            occurrence.save()
+            return HttpResponse(serialize_occurrences(request, [occurrence], request.user))
+        return JSONError(form.errors)
+    except Exception, e:
+        import traceback
+        traceback.print_exc()
+        return JSONError(e)
+
+
+#TODO permission control
+def ajax_edit_event(request, calendar_slug):
+    try:
+        id = request.REQUEST.get('id') # we got occurrence's encoded id or event id
+        if id:
+            kwargs = decode_occurrence(id)
+            if kwargs:
+                event_id = kwargs['event_id']
+            else:
+                event_id = id
+            event = Event.objects.get(pk=event_id)
+            # deleting an event
+            if request.REQUEST.get('action') == 'cancel':
+                # cancellation of a non-recurring event means deleting the event
+                event.delete()
+                # there is nothing more - we return empty json
+                return HttpResponse(serialize_occurrences(request, [], request.user))
+            else:
+                form = EventBackendForm(data=request.POST, instance=event)
+                if form.is_valid():
+                    event = form.save()
+                    return HttpResponse(serialize_occurrences(request, event.get_occurrences(event.start, event.end), request.user))
+                return JSONError(form.errors)
+        else:
+            calendar = get_object_or_404(Calendar, slug=calendar_slug)
+            # creation of an event
+            form = EventBackendForm(data=request.POST)
+            if form.is_valid():
+                event = form.save(commit=False)
+                event.creator = request.user
+                event.calendar = calendar
+                event.save()
+                return HttpResponse(serialize_occurrences(request, event.get_occurrences(event.start, event.end), request.user))
+            return JSONError(form.errors)
+    except Exception, e:
+        import traceback
+        traceback.print_exc()
+        return JSONError(e)
+
+
+#TODO permission control
+def event_json(request):
+    event_id = request.REQUEST.get('event_id')
+    event = get_object_or_404(Event, pk=event_id)
+    event.rule_id = event.rule_id or "false"
+    rnd = loader.get_template('schedule/event_json.html')
+    resp = rnd.render(Context({'event':event}))
+    return HttpResponse(resp)
+=======
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3

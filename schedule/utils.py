@@ -3,6 +3,10 @@ import heapq
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponseRedirect
 from django.conf import settings
+<<<<<<< HEAD
+from django.template import Context, loader
+=======
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 from schedule.conf.settings import CHECK_PERMISSION_FUNC
 
 class EventListManager(object):
@@ -25,7 +29,11 @@ class EventListManager(object):
         if after is None:
             after = datetime.datetime.now()
         occ_replacer = OccurrenceReplacer(
+<<<<<<< HEAD
+            Occurrence.objects.filter(event__in=self.events))
+=======
             Occurrence.objects.filter(event__in = self.events))
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
         generators = [event._occurrences_after_generator(after) for event in self.events]
         occurrences = []
 
@@ -38,7 +46,11 @@ class EventListManager(object):
         while True:
             if len(occurrences) == 0: raise StopIteration
 
+<<<<<<< HEAD
+            generator = occurrences[0][1]
+=======
             generator=occurrences[0][1]
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 
             try:
                 next = heapq.heapreplace(occurrences, (generator.next(), generator))[0]
@@ -75,7 +87,11 @@ class OccurrenceReplacer(object):
         """
         Return persisted occurrences which are now in the period
         """
+<<<<<<< HEAD
+        return [occ for key, occ in self.lookup.items() if (occ.start < end and occ.end >= start and not occ.cancelled)]
+=======
         return [occ for key,occ in self.lookup.items() if (occ.start < end and occ.end >= start and not occ.cancelled)]
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 
 
 class check_event_permissions(object):
@@ -121,5 +137,80 @@ def coerce_date_dict(date_dict):
             modified = True
         except KeyError:
             break
+<<<<<<< HEAD
+    date = modified and retVal or {}
+    
+    if date:
+        try:
+            date = datetime.datetime(**date)
+        except ValueError:
+            raise Http404
+    else:
+        date = datetime.datetime.now()
+    
+    return (date, None)
+
+
+occtimeformat = 'ST%Y%m%d%H%M%S'
+
+def encode_occurrence(occ):
+    """
+        Create a temp id containing event id, encoded id if it is persisted,
+        otherwise timestamp.
+        Used by AJAX implementations so that JS can assemble a URL
+        for calls to occurrence_edit
+    """
+    if occ.id:
+        s = 'ID%d' % occ.id
+    else:
+        s = occ.start.strftime(occtimeformat)
+    return 'E%d_%s' % (occ.event.id, s)
+
+
+def decode_occurrence(id):
+    """
+        reverse of encode_occurrence - given an encoded string
+        returns a dict containing event_id and occurrence data
+        occurrence data contain either occurrence_id
+        or year, month etc.
+    """
+    try:
+        res = {}
+        parts = id.split('_')
+        res['event_id'] = parts[0][1:]
+        occ = parts[1]
+        if occ.startswith('ID'):
+            res['occurrence_id'] = occ[2:]
+        else:
+            start = datetime.datetime.strptime(occ, occtimeformat)
+            occ_data = dict(year=start.year, month=start.month, day=start.day,
+                hour=start.hour, minute=start.minute, second=start.second)
+            res.update(occ_data)
+        return res
+    except IndexError:
+        return
+
+
+def serialize_occurrences(request, occurrences, user):
+    occ_list = []
+    for occ in occurrences:
+        original_id = occ.id
+        occ.id = encode_occurrence(occ)
+        occ.start = occ.start.ctime()
+        occ.end = occ.end.ctime()
+        occ.read_only = not CHECK_PERMISSION_FUNC(occ, user)
+        occ.recurring = bool(occ.event.rule)
+        occ.persisted = bool(original_id)
+        # these attributes are very important from UI point of view
+        # if occ is recurreing and not persisted then a user can edit either event or occurrence
+        # once an occ has been edited it is persisted so he can edit only occurrence
+        # if occ represents non-recurring event then he always edits the event
+        occ.description = occ.description.replace('\n', '\\n') # this can be multiline
+        occ_list.append(occ)
+    rnd = loader.get_template('schedule/occurrences_json.html')
+    resp = rnd.render(Context({'occurrences':occ_list}))
+    return resp
+=======
     return modified and retVal or {}
+>>>>>>> 133f476f94afcb912beb2feefcfd41dc09a3d9e3
 
